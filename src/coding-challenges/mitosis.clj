@@ -18,9 +18,8 @@
 
 (defn move-cell [cell] 
   (let [[x y] (:pos cell)]
-    {:r (:r cell) :color (:color cell)
-     :pos [(+ x (q/random -1 1)) 
-           (+ y (q/random -1 1))]}))
+    (assoc cell :pos [(+ x (q/random -1 1))
+                      (+ y (q/random -1 1))])))
 
 (defn show-cell [cell]
   (let [[x y] (:pos cell)
@@ -30,14 +29,30 @@
     (q/ellipse x y r r)))
 
 (defn setup [] 
-  (get-cell))
+  [(get-cell)])
+  ;(take 5 (repeatedly get-cell)))
+
+(defn click-on-cell? [cell]
+  (let [[x y] (:pos cell)
+        r     (:r cell)
+        dist  (fn [a b] (Math/pow (- a b) 2))]
+    (and (<= (dist (q/mouse-x) x) (* r r))
+         (<= (dist (q/mouse-y) y) (* r r)))))
+
+(defn check-clicks [cells]
+  (if (pos? (count (filter click-on-cell? cells)))
+    [(get-cell)]
+    cells))
 
 (defn update-state [state]
-  (move-cell state))
+  (if (q/mouse-pressed?)
+    (check-clicks state)
+    (map move-cell state)))
 
 (defn draw-state [state] 
   (q/background 51)
-  (show-cell state))
+  (doseq [cell state]
+    (show-cell cell)))
 
 (q/defsketch nanoscopic
   :host "host"
@@ -45,4 +60,5 @@
   :setup setup
   :update update-state
   :draw draw-state
+  :features [:keep-on-top]
   :middleware [m/fun-mode])
