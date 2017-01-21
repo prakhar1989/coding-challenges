@@ -18,20 +18,25 @@
        (take k)
        (vec)))
 
-(defn gen-terrain [delta]
-  (->> 
-    (repeatedly #(get-k-random rows))
-    (take cols) 
-    (vec)))
+(defn get-row [yoff]
+  (mapv (fn [x xoff] 
+         (q/map-range (q/noise xoff yoff) 0 1 -100 100))
+       (range cols) 
+       (iterate #(+ % 0.2) 0)))
 
+(defn gen-terrain [delta]
+  (mapv (fn [y yoff] (get-row yoff))
+       (range rows)
+       (iterate #(+ % 0.2) delta)))
+  
 (defn setup []
   {:terrain (gen-terrain 0) 
    :flying-speed 0})
 
 (defn update-state [state] 
   (let [speed (:flying-speed state)]
-    {:terrain (gen-terrain speed)
-     :flying-speed (- speed 0.1)}))
+    {:terrain (gen-terrain 0)
+     :flying-speed (- speed 1)}))
 
 (defn draw-state [state]
   (let [terrain (:terrain state)]
@@ -44,10 +49,9 @@
     (doseq [row (range (dec rows))]
       (q/begin-shape :triangle-strip)
       (doseq [col (range cols)]
-        (q/vertex (* col scl) (* row scl) (get-in terrain [col row]))
-        (q/vertex (* col scl) (* (inc row) scl) (get-in terrain [col (inc row)])))
+        (q/vertex (* col scl) (* row scl) (get-in terrain [row col]))
+        (q/vertex (* col scl) (* (inc row) scl) (get-in terrain [(inc row) col])))
       (q/end-shape))))
-
 
 (q/defsketch nanoscopic
   :host "host"
