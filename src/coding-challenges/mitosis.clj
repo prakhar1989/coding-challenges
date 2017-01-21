@@ -14,7 +14,7 @@
     {:pos [(rand-between margin (- width margin)) 
            (rand-between margin (- height margin))]
      :r 80
-     :color [(rand-between 100 255) 0 (rand-between 100 255)]}))
+     :color [(rand-between 100 255) 0 (rand-between 100 255) 100]}))
 
 (defn move-cell [cell] 
   (let [[x y] (:pos cell)]
@@ -28,9 +28,11 @@
     (q/no-stroke)
     (q/ellipse x y r r)))
 
+(defn multiply-cell [cell]
+  (assoc cell :r 40))
+
 (defn setup [] 
   [(get-cell)])
-  ;(take 5 (repeatedly get-cell)))
 
 (defn click-on-cell? [cell]
   (let [[x y] (:pos cell)
@@ -39,10 +41,12 @@
     (and (<= (dist (q/mouse-x) x) (* r r))
          (<= (dist (q/mouse-y) y) (* r r)))))
 
-(defn check-clicks [cells]
-  (if (pos? (count (filter click-on-cell? cells)))
-    [(get-cell)]
-    cells))
+(defn check-clicks [state]
+  (let [clicked-cell (first (filter click-on-cell? state))]
+    (if (nil? clicked-cell) state
+      (->> state
+           (remove #(= clicked-cell %))
+           (concat (take 2 (repeatedly #(multiply-cell clicked-cell))))))))
 
 (defn update-state [state]
   (if (q/mouse-pressed?)
@@ -50,7 +54,7 @@
     (map move-cell state)))
 
 (defn draw-state [state] 
-  (q/background 51)
+  (q/background 201)
   (doseq [cell state]
     (show-cell cell)))
 
