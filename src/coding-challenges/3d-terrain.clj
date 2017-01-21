@@ -1,3 +1,4 @@
+; Coding challenge 11 - https://www.youtube.com/watch?v=IKB1hWWedMk
 (ns quil-site.examples.nanoscopic
   (:require [quil.core :as q :include-macros true]
             [quil.middleware :as m]))
@@ -10,30 +11,20 @@
 (def cols (/ w scl))
 (def rows (/ h scl))
 
-(defn rand-between [start end]
-  (+ start (rand-int (- end start))))
-
-(defn get-k-random [k]
-  (->> (repeatedly #(rand-between -10 10))
-       (take k)
-       (vec)))
-
 (defn get-row [yoff]
-  (mapv (fn [x xoff] 
-         (q/map-range (q/noise xoff yoff) 0 1 -100 100))
-       (range cols) 
+  (mapv #(q/map-range (q/noise %2 yoff) 0 1 -100 100)
+       (range cols)
        (iterate #(+ % 0.2) 0)))
 
 (defn gen-terrain [delta]
-  (mapv (fn [y yoff] (get-row yoff))
-       (range rows)
-       (iterate #(+ % 0.2) delta)))
-  
-(defn setup []
-  {:terrain (gen-terrain 0) 
-   :flying-speed 0})
+  (mapv #(get-row %2)
+        (range rows)
+        (iterate #(+ % 0.2) delta)))
 
-(defn update-state [state] 
+(defn setup []
+  {:terrain (gen-terrain 0) :flying-speed 0})
+
+(defn update-state [state]
   (let [speed (:flying-speed state)]
     {:terrain (gen-terrain speed)
      :flying-speed (- speed 0.1)}))
@@ -62,5 +53,4 @@
   :renderer :p3d
   :update update-state
   :draw draw-state
-  :features [:keep-on-top]
   :middleware [m/fun-mode])
