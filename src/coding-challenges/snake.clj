@@ -13,8 +13,7 @@
   (+ start (rand-int (- end start))))
 
 (defn new-food-location []
-  ;[(rand-int rows) (rand-int cols)])
-  [24 15])
+  [(rand-int rows) (rand-int cols)])
 
 (def dirs
   {:right [1 0]
@@ -36,12 +35,30 @@
 (defn setup [] 
   (q/frame-rate 8)
   {:snake (new-snake)
-   :food (new-food-location)})
+   :food (new-food-location)
+   :score 0})
 
-(defn update-state [{:keys [snake food] :as state}]
-  (if (= (first (:body snake)) food)
-    {:snake (move-snake snake :grow) :food [23 10]}
-    {:snake (move-snake snake) :food food}))
+(defn get-new-dir []
+  (condp = (q/key-code)
+    37 :left
+    38 :up
+    39 :right
+    40 :down))
+
+(defn update-state [{:keys [snake food score] :as state}]
+  (cond
+    (q/key-pressed?) 
+      {:snake (assoc snake :dir (get-new-dir)) 
+       :food food 
+       :score score}
+    (= (first (:body snake)) food)
+      {:snake (move-snake snake :grow) 
+       :food (new-food-location)
+       :score (inc score)}
+    :else
+      {:snake (move-snake snake)
+       :food food
+       :score score}))
 
 (defn draw-snake [snake]
   (q/fill 255)
@@ -54,7 +71,8 @@
     (q/fill 252 153 25)
     (q/no-stroke)
     (q/rect (* x scale) (* y scale) scale scale))
-  (draw-snake (:snake state)))
+  (draw-snake (:snake state))
+  (q/text (str (:score state)) 10 10 100 100))
 
 (q/defsketch nanoscopic
   :host "host"
