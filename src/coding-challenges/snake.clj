@@ -25,8 +25,9 @@
 
 (defn move-snake [{:keys [body dir] :as snake} & grow]
   (let [dirs {:right [1 0] :up [0 -1] :left [-1 0] :down [0 1]}]
-  (assoc snake :body (cons (add-points (first body) (dir dirs))
-                           (if grow body (butlast body))))))
+    (assoc snake :body 
+           (cons (add-points (first body) (dir dirs))
+                 (if grow body (butlast body))))))
 
 (defn reset-state []
   {:snake (new-snake)
@@ -39,25 +40,30 @@
 
 (defn get-new-dir [prev-dir]
   (condp = (q/key-code)
-    37 :left
-    38 :up
-    39 :right
-    40 :down
+    37 (if (= prev-dir :right) prev-dir :left)
+    38 (if (= prev-dir :down) prev-dir :up)
+    39 (if (= prev-dir :left) prev-dir :right)
+    40 (if (= prev-dir :up) prev-dir :down)
     :else prev-dir))
 
-(defn update-state [{:keys [snake food score] :as state}]
+(defn has-collided? [snake]
+  (some #(= % (first snake)) (rest snake)))
+
+(defn update-state [{:keys [snake food score]}]
   (cond
+    (has-collided? (:body snake))
+      (reset-state)
     (= (first (:body snake)) food)
       {:snake (move-snake snake :grow) 
-       :food (new-food-location)
+       :food  (new-food-location)
        :score (inc score)}
     (q/key-pressed?) 
       {:snake (assoc snake :dir (get-new-dir (:dir snake))) 
-       :food food 
+       :food  food 
        :score score}
     :else
       {:snake (move-snake snake)
-       :food food
+       :food  food
        :score score}))
 
 (defn draw-snake [snake]
@@ -73,7 +79,7 @@
     (q/rect (* x scale) (* y scale) scale scale))
   (draw-snake (:snake state))
   (q/text-size 24)
-  (q/text (str "Score: " (:score state)) 10 10 100 100))
+  (q/text (str (:score state)) 10 10 100 100))
 
 (q/defsketch nanoscopic
   :host "host"
