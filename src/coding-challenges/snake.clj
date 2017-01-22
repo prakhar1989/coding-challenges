@@ -38,13 +38,22 @@
   (q/frame-rate 10)
   (reset-state))
 
-(defn get-new-dir [prev-dir]
-  (condp = (q/key-code)
-    37 (if (= prev-dir :right) prev-dir :left)
-    38 (if (= prev-dir :down) prev-dir :up)
-    39 (if (= prev-dir :left) prev-dir :right)
-    40 (if (= prev-dir :up) prev-dir :down)
+(defn get-new-dir [new-dir prev-dir]
+  (case new-dir
+    :left (if (= prev-dir :right) prev-dir :left)
+    :up (if (= prev-dir :down) prev-dir :up)
+    :right (if (= prev-dir :left) prev-dir :right)
+    :down (if (= prev-dir :up) prev-dir :down)
     :else prev-dir))
+
+(defn on-key-down [state event]
+  (let [prev-dir (get-in state [:snake :dir])]
+    (case (:key event)
+      (:w :up)    (assoc-in state [:snake :dir] (get-new-dir :up prev-dir))
+      (:s :down)  (assoc-in state [:snake :dir] (get-new-dir :down prev-dir))
+      (:a :left)  (assoc-in state [:snake :dir] (get-new-dir :left prev-dir))
+      (:d :right) (assoc-in state [:snake :dir] (get-new-dir :right prev-dir))
+      state)))
 
 (defn has-collided? [snake]
   (some #(= % (first snake)) (rest snake)))
@@ -57,10 +66,6 @@
       {:snake (move-snake snake :grow) 
        :food  (new-food-location)
        :score (inc score)}
-    (q/key-pressed?) 
-      {:snake (assoc snake :dir (get-new-dir (:dir snake))) 
-       :food  food 
-       :score score}
     :else
       {:snake (move-snake snake)
        :food  food
@@ -86,6 +91,7 @@
   :size [width height]
   :setup setup
   :update update-state
+  :key-pressed on-key-down
   :draw draw-state
   :features [:keep-on-top]
   :middleware [m/fun-mode])
