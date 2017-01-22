@@ -13,24 +13,35 @@
   (+ start (rand-int (- end start))))
 
 (defn new-food-location []
-  [(rand-int rows) (rand-int cols)])
+  ;[(rand-int rows) (rand-int cols)])
+  [24 15])
+
+(def dirs
+  {:right [1 0]
+   :up    [0 -1]
+   :left  [-1 0]
+   :down  [0 1]})
 
 (defn new-snake []
   {:body [[(/ rows 2) (/ cols 2)]]
-   :dir :east})
+   :dir :right})
 
-(defn move-snake [snake]
-  (let [{:keys [x y xspeed yspeed]} snake]
-    (-> (assoc snake :x (+ x xspeed))
-        (assoc :y (+ y yspeed)))))
+(defn add-points [& pts]
+  (vec (apply map + pts)))
 
+(defn move-snake
+  [{:keys [body dir] :as snake} & grow]
+  (assoc snake :body (cons (add-points (first body) (dir dirs))
+                           (if grow body (butlast body)))))
 (defn setup [] 
-  (q/frame-rate 10)
+  (q/frame-rate 8)
   {:snake (new-snake)
    :food (new-food-location)})
 
-(defn update-state [state]
-  state)
+(defn update-state [{:keys [snake food] :as state}]
+  (if (= (first (:body snake)) food)
+    {:snake (move-snake snake :grow) :food [23 10]}
+    {:snake (move-snake snake) :food food}))
 
 (defn draw-snake [snake]
   (q/fill 255)
