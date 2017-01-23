@@ -11,10 +11,13 @@
 
 ;; --- EVENT HANDLER ---
 (defn on-key-down [state event]
-  (case (:key event)
-    (:a :left) (update-in state [:ship :x] #(- % 10))
-    (:d :right) (update-in state [:ship :x] #(+ % 10))
-    state))
+  (let [ship-x (get-in state [:ship :x])]
+    (case (:key event)
+      (:a :left) (update-in state [:ship :x] #(- % 10))
+      (:d :right) (update-in state [:ship :x] #(+ % 10))
+      (:w :up) (assoc state :drops
+                      (conj (:drops state) (get-droplet ship-x 540)))
+      state)))
 
 (def colors '([255 149 5] [253 231 76] [229 89 52] [165 70 87]))
 
@@ -44,17 +47,20 @@
   (q/fill 50 200 200)
   (q/ellipse x y 16 16))
 
+(defn move-droplets [drops]
+  (->> drops
+       (filter #(pos? (:y %)))
+       (map (fn [drp] (update drp :y #(- % 10))))))
+
 ;; --- SKETCH ---
 (defn setup []
   (let [flowers (for [x (range 60 540 90)
                       y (range 60 300 90)]
                   (get-flower x y))]
-  {:ship (get-ship)
-   :flowers flowers
-   :drops [(get-droplet 300 500)]}))
+  {:ship (get-ship) :flowers flowers :drops []}))
  
 (defn update-state [state] 
-  state)
+  (assoc state :drops (move-droplets (:drops state))))
 
 (defn draw-state [state]
   (q/background 51)
