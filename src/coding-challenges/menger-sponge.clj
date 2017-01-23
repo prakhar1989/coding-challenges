@@ -14,12 +14,12 @@
 
 (defn generate-boxes [{:keys [pos r] :as box}]
   (let [new-r (/ r 3)]
-    (->> (for [x '(-1 0 1) y '(-1 0 1) z '(-1 0 1)
-               :when (> (reduce + (map #(Math/abs %) [x y z])) 1)]
-           (new-box (+ (get pos 0) (* new-r x)) 
-                    (+ (get pos 1) (* new-r y))
-                    (+ (get pos 2) (* new-r z))
-                    new-r)))))
+    (for [x '(-1 0 1) y '(-1 0 1) z '(-1 0 1)
+          :when (> (reduce + (map #(Math/abs %) [x y z])) 1)]
+      (new-box (+ (get pos 0) (* new-r x)) 
+               (+ (get pos 1) (* new-r y))
+               (+ (get pos 2) (* new-r z))
+               new-r))))
 
 (defn show-box [{:keys [pos r] :as box}]
   (q/push-matrix)
