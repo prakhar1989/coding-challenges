@@ -16,7 +16,7 @@
       (:a :left) (update-in state [:ship :x] #(- % 10))
       (:d :right) (update-in state [:ship :x] #(+ % 10))
       (:w :up) (assoc state :drops
-                      (conj (:drops state) (get-droplet ship-x 540)))
+                      (conj (:drops state) (get-droplet ship-x height)))
       state)))
 
 (def colors '([255 149 5] [253 231 76] [229 89 52] [165 70 87]))
@@ -47,6 +47,12 @@
   (q/fill 50 200 200)
   (q/ellipse x y 16 16))
 
+(defn intersect? [droplet flower]
+  (let [dist (fn [a b] (* (- a b) (- a b)))
+        center-dist (+ (dist (:x droplet) (:x flower))
+                       (dist (:y droplet) (:y flower)))]
+    (<= center-dist (* 38 38)))) ; 38 = sum of radii of the two
+
 (defn move-droplets [drops]
   (->> drops
        (filter #(pos? (:y %)))
@@ -58,9 +64,20 @@
                       y (range 60 300 90)]
                   (get-flower x y))]
   {:ship (get-ship) :flowers flowers :drops []}))
+
+;; returns new state after removing
+;; drops and flowers that hit each other
+(defn remove-hits [{:keys [drops flowers] :as state}]
+  (let [remaining (for [d drops
+                        f flowers
+                        :when (not (intersect? d f))]
+                    [d f])]
+    (assoc state :flowers (mapv second remaining))))
  
 (defn update-state [state] 
-  (assoc state :drops (move-droplets (:drops state))))
+  (let [new-state (if (empty? (:drops state)) state
+                    (remove-hits state))]
+    (assoc new-state :drops (move-droplets (:drops new-state)))))
 
 (defn draw-state [state]
   (q/background 51)
