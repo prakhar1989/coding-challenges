@@ -53,20 +53,19 @@
 
 ;; --- SKETCH ---
 (defn setup []
-  (let [flowers (for [x (range 60 540 90)]
-                      ;y (range 120 300 90)]
-                  (get-flower x 100))]
+  (let [flowers (for [x (range 60 540 90)
+                      y (range 60 300 90)]
+                  (get-flower x y))]
   {:ship (get-ship) :flowers flowers :drops []}))
 
-;; returns new state after removing
-;; drops and flowers that hit each other
-;; TODO: fix the performance issue in this function
 (defn remove-hits [state]
-  (let [remaining (into [] (for [f (:flowers state)
-                                 d (:drops state)
-                                 :when (not (intersect? d f))] f))]
-    state))
- 
+  (let [remaining (for [f (:flowers state)
+                          :let [d (filter #(not (intersect? % f)) (:drops state))]
+                          :when (not-any? #(intersect? % f) (:drops state))]
+                      [f d])
+        new-flowers (mapv first remaining)]
+    (assoc state :flowers new-flowers)))
+
 (defn update-state [state] 
   (let [new-ship (move-ship (:ship state))
         new-drops (move-droplets (:drops state))
@@ -89,8 +88,8 @@
 (defn on-key-down [state event]
   (let [ship-x (get-in state [:ship :x])]
     (case (:key event)
-      (:a :left) (assoc-in state [:ship :dx] -1)
-      (:d :right) (assoc-in state [:ship :dx] 1)
+      (:a :left) (assoc-in state [:ship :dx] -5)
+      (:d :right) (assoc-in state [:ship :dx] 5)
       (:w :up) (assoc state :drops
                       (conj (:drops state) (get-droplet ship-x height)))
       state)))
