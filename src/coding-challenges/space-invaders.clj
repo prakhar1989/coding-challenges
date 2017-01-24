@@ -9,27 +9,20 @@
 (defn rand-between [start end]
   (+ start (rand-int (- end start))))
 
-;; --- EVENT HANDLER ---
-(defn on-key-down [state event]
-  (let [ship-x (get-in state [:ship :x])]
-    (case (:key event)
-      (:a :left) (update-in state [:ship :x] #(- % 10))
-      (:d :right) (update-in state [:ship :x] #(+ % 10))
-      (:w :up) (assoc state :drops
-                      (conj (:drops state) (get-droplet ship-x height)))
-      state)))
-
 (def colors '([255 149 5] [253 231 76] [229 89 52] [165 70 87]))
 
 ;; --- SHIP ---
 (defn get-ship []
-  {:x (/ width 2)})
+  {:x (/ width 2) :dx 0})
 
 (defn draw-ship [ship]
   (q/fill 255)
   (q/no-stroke)
   (q/rect-mode :center)
   (q/rect (:x ship) (- height 20) 20 60))
+
+(defn move-ship [{:keys [x dx] :as ship}]
+  (assoc ship :x (+ x dx)))
 
 ;; --- FLOWER ---
 (defn get-flower [x y]
@@ -60,24 +53,26 @@
 
 ;; --- SKETCH ---
 (defn setup []
-  (let [flowers (for [x (range 60 540 90)
-                      y (range 60 300 90)]
-                  (get-flower x y))]
+  (let [flowers (for [x (range 60 540 90)]
+                      ;y (range 120 300 90)]
+                  (get-flower x 100))]
   {:ship (get-ship) :flowers flowers :drops []}))
 
 ;; returns new state after removing
 ;; drops and flowers that hit each other
-(defn remove-hits [{:keys [drops flowers] :as state}]
-  (let [remaining (for [d drops
-                        f flowers
-                        :when (not (intersect? d f))]
-                    [d f])]
-    (assoc state :flowers (mapv second remaining))))
+;; TODO: fix the performance issue in this function
+(defn remove-hits [state]
+  (let [remaining (into [] (for [f (:flowers state)
+                                 d (:drops state)
+                                 :when (not (intersect? d f))] f))]
+    state))
  
 (defn update-state [state] 
-  (let [new-state (if (empty? (:drops state)) state
-                    (remove-hits state))]
-    (assoc new-state :drops (move-droplets (:drops new-state)))))
+  (let [new-ship (move-ship (:ship state))
+        new-drops (move-droplets (:drops state))
+        new-state (assoc state :drops new-drops)]
+    (if (empty? new-drops) (assoc new-state :ship new-ship)
+      (remove-hits new-state))))
 
 (defn draw-state [state]
   (q/background 51)
@@ -87,11 +82,25 @@
   (doseq [d (:drops state)]
     (draw-droplet d)))
 
+;; --- EVENT HANDLERS ---
+(defn on-key-release [state]
+  (assoc-in state [:ship :dx] 0))
+
+(defn on-key-down [state event]
+  (let [ship-x (get-in state [:ship :x])]
+    (case (:key event)
+      (:a :left) (assoc-in state [:ship :dx] -1)
+      (:d :right) (assoc-in state [:ship :dx] 1)
+      (:w :up) (assoc state :drops
+                      (conj (:drops state) (get-droplet ship-x height)))
+      state)))
+
 (q/defsketch nanoscopic
   :host "host"
   :size [width height]
   :setup setup
   :key-pressed on-key-down
+  :key-released on-key-release
   :update update-state
   :draw draw-state
   :features [:keep-on-top]
