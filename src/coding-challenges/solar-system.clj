@@ -9,30 +9,44 @@
 (defn rand-between [start end]
   (+ start (rand-int (- end start))))
 
-(defn get-planet [radius distance]
-  {:r radius :d distance :theta 0.0 :moons []})
+(defn get-planet [radius distance orbit-speed]
+  {:r radius :d distance
+   :theta (* 2 q/PI (rand))
+   :orbit-speed orbit-speed
+   :moons []})
 
 (defn spawn-moons 
   [{:keys [r d] :as planet} total]
-  (let [moons (repeat total
-                      (get-planet (* 0.5 r)
-                                  (rand-between 100 200)))]
+  (let [moons (take total
+                    (repeatedly #(get-planet (* (+ 0.1 (rand 0.5)) r)
+                                             (rand-between 75 300)
+                                             (+ 0.002 (rand 0.008)))))]
     (assoc planet :moons moons)))
 
 (defn setup [] 
-  {:sun (get-planet 100 0)})
+  (let [sun (get-planet 50 0 0)]
+    (spawn-moons sun 5)))
 
-(defn update-state [state] state)
+(defn update-state [state]
+  (orbit-planet state))
 
-(defn draw-planet [{:keys [r d]}]
-  (let [s (* 2 r)]
-    (q/fill 255)
-    (q/ellipse d d s s)))
+(defn orbit-planet
+  [{:keys [theta orbit-speed moons] :as planet}]
+  (assoc planet :theta (+ theta orbit-speed)
+                :moons (map orbit-planet moons)))
+
+(defn draw-planet [{:keys [r d theta] :as planet}]
+  (q/rotate theta)
+  (q/with-translation [d 0]
+    (q/fill 255 100)
+    (q/ellipse 0 0 (* 2 r) (* 2 r))
+    (doseq [m (:moons planet)]
+      (draw-planet m))))
 
 (defn draw-state [state] 
   (q/background 0)
   (q/with-translation [(/ width 2) (/ height 2)]
-    (draw-planet (:sun state))))
+    (draw-planet state)))
 
 (q/defsketch nanoscopic
   :host "host"
