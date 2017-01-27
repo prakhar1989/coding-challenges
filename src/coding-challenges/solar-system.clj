@@ -15,25 +15,28 @@
    :orbit-speed orbit-speed
    :moons []})
 
-(defn spawn-moons 
-  [{:keys [r d] :as planet} total]
-  (let [moons (take total
-                    (repeatedly #(get-planet (* (+ 0.1 (rand 0.5)) r)
-                                             (rand-between 75 300)
-                                             (+ 0.002 (rand 0.008)))))]
-    (assoc planet :moons moons)))
+(defn generate-moons
+  [{:keys [r d] :as planet} total level]
+  (if (> level 2) planet
+    (let [get-new-moon (fn [] (get-planet (/ r (* 1.2 level))
+                                          (/ (rand-between 100 150) level)
+                                          (+ -0.01 (rand 0.08))))
+          moons (take total (repeatedly get-new-moon))
+          sub-moons (map #(generate-moons % 2 (inc level)) moons)]
+      (assoc planet :moons sub-moons))))
 
 (defn setup [] 
-  (let [sun (get-planet 50 0 0)]
-    (spawn-moons sun 5)))
-
-(defn update-state [state]
-  (orbit-planet state))
+  (let [sun (get-planet 50 0 0)
+        t (generate-moons sun 5 1)]
+    (generate-moons sun 5 1)))
 
 (defn orbit-planet
   [{:keys [theta orbit-speed moons] :as planet}]
   (assoc planet :theta (+ theta orbit-speed)
                 :moons (map orbit-planet moons)))
+
+(defn update-state [state]
+  (orbit-planet state))
 
 (defn draw-planet [{:keys [r d theta] :as planet}]
   (q/rotate theta)
