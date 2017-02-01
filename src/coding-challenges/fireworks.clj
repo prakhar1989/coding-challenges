@@ -1,4 +1,4 @@
-; Coding challenge 2 - https://www.youtube.com/watch?v=LG8ZK-rRkXo
+;; Coding challenge 27 - https://www.youtube.com/watch?v=CKeyIbT3vXI
 (ns quil-site.examples.nanoscopic
   (:require [quil.core :as q :include-macros true]
             [quil.middleware :as m]))
@@ -23,8 +23,9 @@
   (assoc p :acc (map + (:acc p) f)))
 
 (defn draw-particle [p]
-  (let [[x y] (:pos p)]
-    (q/point x y)))
+  (when (not (nil? p))
+    (let [[x y] (:pos p)]
+      (q/point x y))))
 
 (defn in-bounds? [p]
   (let [[x y] (:pos p)]
@@ -32,7 +33,12 @@
          (> y 0) (< y height))))
 
 (defn new-firework []
-  [(new-particle (rand-int width) height)])
+  (new-particle (rand-int width) height))
+
+(defn update-firework [fw gravity]
+  (let [fw (->> (apply-force fw gravity)
+                (update-particle))]
+    (if (in-bounds? fw) fw nil)))
 
 (defn setup [] 
   (q/stroke 255)
@@ -40,26 +46,17 @@
   {:gravity   [0 0.2]
    :fireworks [(new-firework)]})
 
-(defn update-firework [fw gravity]
-  (->> (map #(apply-force % gravity) fw)
-       (map update-particle)
-       (filter in-bounds?)))
-
-(defn update-state 
+(defn update-state
   [{:keys [gravity fireworks] :as state}] 
-  (let [fws (if (> (rand) 0.1) fireworks
-              (conj fireworks (new-firework)))]
+  (let [fireworks (filter (comp not nil?) fireworks)
+        new-fw (if (> (rand) 0.1) fireworks (conj fireworks (new-firework)))]
     (assoc state :fireworks 
-           (map #(update-firework % gravity) fws))))
-
-(defn draw-firework [fw]
-  (doseq [p fw]
-    (draw-particle p)))
+           (map #(update-firework % gravity) new-fw))))
 
 (defn draw-state [state]
   (q/background 51)
   (doseq [fw (:fireworks state)]
-    (draw-firework fw)))
+    (draw-particle fw)))
 
 (q/defsketch nanoscopic
   :host "host"
